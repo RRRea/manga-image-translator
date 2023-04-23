@@ -36,7 +36,7 @@ class YoudaoTranslator(CommonTranslator):
     }
     _API_URL = 'https://openapi.youdao.com/api'
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         if not YOUDAO_APP_KEY or not YOUDAO_SECRET_KEY:
             raise MissingAPIKeyException('Please set the YOUDAO_APP_KEY and YOUDAO_SECRET_KEY environment variables before using the youdao translator.')
@@ -61,7 +61,7 @@ class YoudaoTranslator(CommonTranslator):
         result = await self._do_request(data)
         result_list = []
         if "translation" not in result:
-            raise InvalidServerResponse('Youdao returned invalid response: ' + result + '\nAre the API keys set correctly?')
+            raise InvalidServerResponse(f'Youdao returned invalid response: {result}\nAre the API keys set correctly?')
         for ret in result["translation"]:
             result_list.extend(ret.split('\n'))
         return result_list

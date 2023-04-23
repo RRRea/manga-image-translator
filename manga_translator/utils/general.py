@@ -11,6 +11,8 @@ import sys
 import hashlib
 import re
 import einops
+import unicodedata
+import json
 
 try:
     functools.cached_property
@@ -60,6 +62,14 @@ class Context(dict):
     def _get_args(self):
         return []
 
+# TODO: Add TranslationContext for type linting
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_sort(l: List[str]):
+    return sorted(l, key=lambda text: [atoi(c) for c in re.split(r'(\d+)', text)])
+
 def repeating_sequence(s: str):
     """Extracts repeating sequence from string. Example: 'abcabca' -> 'abc'."""
     for i in range(1, len(s) // 2 + 1):
@@ -67,6 +77,47 @@ def repeating_sequence(s: str):
         if seq * (len(s)//len(seq)) + seq[:len(s)%len(seq)] == s:
             return seq
     return s
+
+def is_whitespace(ch):
+    """Checks whether `chars` is a whitespace character."""
+    # \t, \n, and \r are technically contorl characters but we treat them
+    # as whitespace since they are generally considered as such.
+    if ch == " " or ch == "\t" or ch == "\n" or ch == "\r" or ord(ch) == 0:
+        return True
+    cat = unicodedata.category(ch)
+    if cat == "Zs":
+        return True
+    return False
+
+def is_control(ch):
+    """Checks whether `chars` is a control character."""
+    # These are technically control characters but we count them as whitespace
+    # characters.
+    if ch == "\t" or ch == "\n" or ch == "\r":
+        return False
+    cat = unicodedata.category(ch)
+    if cat in ("Cc", "Cf"):
+        return True
+    return False
+
+def is_punctuation(ch):
+    """Checks whether `chars` is a punctuation character."""
+    cp = ord(ch)
+    # We treat all non-letter/number ASCII as punctuation.
+    # Characters such as "^", "$", and "`" are not in the Unicode
+    # Punctuation class but we treat them as punctuation anyways, for
+    # consistency.
+    if ((cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64) or
+        (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
+        return True
+    cat = unicodedata.category(ch)
+    if cat.startswith("P"):
+        return True
+    return False
+
+def count_valuable_text(text) -> int:
+    # return sum([1 for ch in text if re.search(r'\w', ch)])
+    return sum([1 for ch in text if not is_punctuation(ch) and not is_control(ch) and not is_whitespace(ch)])
 
 def replace_prefix(s: str, old: str, new: str):
     if s.startswith(old):
@@ -97,8 +148,10 @@ def get_filename_from_url(url: str, default: str = '') -> str:
         return m.group(1)
     return default
 
+def is_url(s: str):
+    return re.search(r'^http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+$', s) and True
+
 def download_url_with_progressbar(url: str, path: str):
-    # TODO: Fix partial downloads
     if os.path.basename(path) in ('.', '') or os.path.isdir(path):
         new_filename = get_filename_from_url(url)
         if not new_filename:
@@ -110,10 +163,11 @@ def download_url_with_progressbar(url: str, path: str):
     if os.path.isfile(path):
         downloaded_size = os.path.getsize(path)
         headers['Range'] = 'bytes=%d-' % downloaded_size
+        headers['Accept-Encoding'] = 'deflate'
 
     r = requests.get(url, stream=True, allow_redirects=True, headers=headers)
     if downloaded_size and r.headers.get('Accept-Ranges') != 'bytes':
-        print('Error: Webserver does not support partial downloads. Restarting from the beginning!')
+        print('Error: Webserver does not support partial downloads. Restarting from the beginning.')
         r = requests.get(url, stream=True, allow_redirects=True)
         downloaded_size = 0
     total = int(r.headers.get('content-length', 0))
@@ -123,7 +177,7 @@ def download_url_with_progressbar(url: str, path: str):
         with tqdm.tqdm(
             desc=os.path.basename(path),
             initial=downloaded_size,
-            total=total,
+            total=total+downloaded_size,
             unit='iB',
             unit_scale=True,
             unit_divisor=chunk_size,
@@ -734,6 +788,24 @@ def color_difference(rgb1: List, rgb2: List) -> float:
     diff[..., 0] *= 0.392
     diff = np.linalg.norm(diff, axis=2) 
     return diff.item()
+
+def rgb2hex(r,g,b):
+    return "#{:02x}{:02x}{:02x}".format(r,g,b)
+
+def hex2rgb(hexcode):
+    return tuple(map(ord,hexcode[1:].decode('hex')))
+
+def get_color_name(rgb: List[int]) -> str:
+        try:
+            # TODO: Maybe replace with offline alternative
+            url = f'https://www.thecolorapi.com/id?format=json&rgb={rgb[0]},{rgb[1]},{rgb[2]}'
+            response = requests.get(url)
+            if response.status_code == 200:
+                return json.loads(response.text)['name']['value']
+            else:
+                return 'Unnamed'
+        except Exception:
+            return 'Unnamed'
 
 def square_pad_resize(img: np.ndarray, tgt_size: int):
     h, w = img.shape[:2]

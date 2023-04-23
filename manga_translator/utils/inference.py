@@ -108,8 +108,8 @@ class ModelWrapper(ABC):
     def model_dir(self):
         return os.path.join(self._MODEL_DIR, self._MODEL_SUB_DIR)
 
-    def _get_file_path(self, relative_path: str) -> str:
-        return os.path.join(self.model_dir, relative_path)
+    def _get_file_path(self, *args) -> str:
+        return os.path.join(self.model_dir, *args)
 
     def _get_used_gpu_memory(self) -> bool:
         '''
@@ -279,7 +279,7 @@ class ModelWrapper(ABC):
         elif 'archive' in mapping:
             for orig, dest in mapping['archive'].items():
                 if os.path.basename(dest) in ('', '.'):
-                    dest = os.path.join(dest, os.path.basename(orig))
+                    dest = os.path.join(dest, os.path.basename(orig[:-1] if orig.endswith('/') else orig))
                 if not os.path.exists(self._get_file_path(dest)):
                     return False
 
@@ -320,13 +320,13 @@ class ModelWrapper(ABC):
             await self._unload()
             self._loaded = False
 
-    async def forward(self, *args, **kwargs):
+    async def infer(self, *args, **kwargs):
         '''
         Makes a forward pass through the network.
         '''
         if not self.is_loaded():
             raise Exception(f'{self._key}: Tried to forward pass without having loaded the model.')
-        return await self._forward(*args, **kwargs)
+        return await self._infer(*args, **kwargs)
 
     @abstractmethod
     async def _load(self, device: str, *args, **kwargs):
@@ -337,5 +337,5 @@ class ModelWrapper(ABC):
         pass
 
     @abstractmethod
-    async def _forward(self, *args, **kwargs):
+    async def _infer(self, *args, **kwargs):
         pass

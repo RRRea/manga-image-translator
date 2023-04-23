@@ -48,29 +48,26 @@ $ pip install -r requirements.txt
 找一个对应 Python 版本的预编译包，并使用 `pip` 安装。\
 如果你在使用其它操作系统，可以尝试使用 `pip install git+https://github.com/lucasb-eyer/pydensecrf.git` 安装。
 
-之后从 <https://github.com/zyddnys/manga-image-translator/releases/> 下载
-`ocr.ckpt`、`ocr-ctc.ckpt`、`detect.ckpt`、`comictextdetector.pt`、`comictextdetector.pt` 和 `inpainting_lama_mpe.ckpt`，放到仓库的根目录下。
-
 [使用谷歌翻译时可选]\
 申请有道翻译或者 DeepL 的 API，把你的 `APP_KEY` 和 `APP_SECRET` 或 `AUTH_KEY` 写入 `translators/key.py` 中。
 
 ### 翻译器列表
 
-| 名称            | 是否需要 API Key | 是否离线可用 | 其他说明       |
-| -------------- | ------- | ------ | ----------------------------------------------------- |
-| google         |         | ✔️      |                                                       |
-| youdao         | ✔️       | ✔️      |                                                       |
-| baidu          | ✔️       | ✔️      |                                                       |
-| deepl          | ✔️       | ✔️      |                                                       |
-| papago         |         | ✔️      |                                                       | 
+| 名称            | 是否需要 API Key | 是否离线可用 | 其他说明                                    |
+| -------------- | ------- | ------- | ----------------------------------------------------- |
+| google         |         |         |                                                       |
+| youdao         | ✔️      |         | Requires `YOUDAO_APP_KEY` and `YOUDAO_SECRET_KEY`     |
+| baidu          | ✔️      |         | Requires `BAIDU_APP_ID` and `BAIDU_SECRET_KEY`        |
+| deepl          | ✔️      |         | Requires `DEEPL_AUTH_KEY`                             |
+| gpt3           | ✔️      |         | Implements text-davinci-003. Requires `OPENAI_API_KEY`|
+| gpt3.5         | ✔️      |         | Implements gpt-3.5-turbo. Requires `OPENAI_API_KEY`   |
+| papago         |         |         |                                                       |
 | offline        |         | ✔️      |                                                       |
 | sugoi          |         | ✔️      |                                                       |
-| jparacrawl     |         |        |                                                       | 
-| jparacrawl_big |         | ✔️      |                                                       |
-| nllb           |         | ✔️      |                                                       |
-| nllb_big       |         |        |                                                       |
-| none           |         | ✔️      | 翻译成空白文本  |
-| original       |         | ✔️      | 翻译成源文本    |
+| m2m100         |         | ✔️      |                                                       |
+| m2m100_big     |         | ✔️      |                                                       |
+| none           |         | ✔️      | 翻译成空白文本                                          |
+| original       |         | ✔️      | 翻译成源文本                                            |
 
 ### 语言代码列表
 
@@ -97,6 +94,103 @@ TRK: Turkish
 VIN: Vietnames
 ```
 
+<!-- Auto generated start -->
+## 选项
+
+```text
+-h, --help                                   show this help message and exit
+-m, --mode {demo,batch,web,web_client,ws,api}
+                                             Run demo in single image demo mode (demo), batch
+                                             translation mode (batch), web service mode (web)
+-i, --input INPUT                            Path to an image file if using demo mode, or path to an
+                                             image folder if using batch mode
+-o, --dest DEST                              Path to the destination folder for translated images in
+                                             batch mode
+-l, --target-lang {CHS,CHT,CSY,NLD,ENG,FRA,DEU,HUN,ITA,JPN,KOR,PLK,PTB,ROM,RUS,ESP,TRK,UKR,VIN}
+                                             Destination language
+-v, --verbose                                Print debug info and save intermediate images in result
+                                             folder
+-f, --format {png,webp,jpg}                  Output format of the translation.
+--detector {default,ctd}                     Text detector used for creating a text mask from an
+                                             image
+--ocr {32px,48px_ctc}                        Optical character recognition (OCR) model to use
+--inpainter {default,lama_mpe,sd,none,original}
+                                             Inpainting model to use
+--upscaler {waifu2x,esrgan}                  Upscaler to use. --upscale-ratio has to be set for it
+                                             to take effect
+--upscale-ratio {1,2,3,4,8,16,32}            Image upscale ratio applied before detection. Can
+                                             improve text detection.
+--translator {google,youdao,baidu,deepl,papago,gpt3,gpt3.5,none,original,offline,nllb,nllb_big,sugoi,jparacrawl,jparacrawl_big,m2m100,m2m100_big}
+                                             Language translator to use
+--translator-chain TRANSLATOR_CHAIN          Output of one translator goes in another. Example:
+                                             --translator-chain "google:JPN;sugoi:ENG".
+--selective-translation SELECTIVE_TRANSLATION
+                                             Select a translator based on detected language in
+                                             image. Note the first translation service acts as
+                                             default if the language isnt defined. Example:
+                                             --translator-chain "google:JPN;sugoi:ENG".
+--use-cuda                                   Turn on/off cuda
+--use-cuda-limited                           Turn on/off cuda (excluding offline translator)
+--model-dir MODEL_DIR                        Model directory (by default ./models in project root)
+--retries RETRIES                            Retry attempts on encountered error. -1 means infinite
+                                             times.
+--revert-upscaling                           Downscales the previously upscaled image after
+                                             translation back to original size (Use with --upscale-
+                                             ratio).
+--detection-size DETECTION_SIZE              Size of image used for detection
+--det-rotate                                 Rotate the image for detection. Might improve
+                                             detection.
+--det-auto-rotate                            Rotate the image for detection to prefer vertical
+                                             textlines. Might improve detection.
+--det-invert                                 Invert the image colors for detection. Might improve
+                                             detection.
+--det-gamma-correct                          Applies gamma correction for detection. Might improve
+                                             detection.
+--inpainting-size INPAINTING_SIZE            Size of image used for inpainting (too large will
+                                             result in OOM)
+--unclip-ratio UNCLIP_RATIO                  How much to extend text skeleton to form bounding box
+--box-threshold BOX_THRESHOLD                Threshold for bbox generation
+--text-threshold TEXT_THRESHOLD              Threshold for text detection
+--font-size FONT_SIZE                        Use fixed font size for rendering
+--font-size-offset FONT_SIZE_OFFSET          Offset font size by a given amount, positive number
+                                             increase font size and vice versa
+--font-size-minimum FONT_SIZE_MINIMUM        Minimum output font size. Default is
+                                             image_sides_sum/150
+--force-horizontal                           Force text to be rendered horizontally
+--force-vertical                             Force text to be rendered vertically
+--align-left                                 Align rendered text left
+--align-center                               Align rendered text centered
+--align-right                                Align rendered text right
+--uppercase                                  Change text to uppercase
+--lowercase                                  Change text to lowercase
+--manga2eng                                  Render english text translated from manga with some
+                                             additional typesetting. Ignores some other argument
+                                             options
+--chatgpt-prompt-file CHATGPT_PROMPT_FILE    Prepends contents of the specified file to the chatgpt
+                                             prompt. Denote the target language with "{lang}"
+--chatgpt-temperature CHATGPT_TEMPERATURE    The chatgpt temperature. 0 is the most strict setting
+                                             and 1 is the most creative. Default is 0.5.
+--mtpe                                       Turn on/off machine translation post editing (MTPE) on
+                                             the command line (works only on linux right now)
+--save-text                                  Save extracted text and translations into a text file.
+--save-text-file SAVE_TEXT_FILE              Like --save-text but with a specified file path.
+--filter-text FILTER_TEXT                    Filter regions by their text with a regex. Example
+                                             usage: --text-filter ".*badtext.*"
+--prep-manual                                Prepare for manual typesetting by outputting blank,
+                                             inpainted images, plus copies of the original for
+                                             reference
+--font-path FONT_PATH                        Path to font file
+--host HOST                                  Used by web module to decide which host to attach to
+--port PORT                                  Used by web module to decide which port to attach to
+--nonce NONCE                                Used by web module as secret for securing internal web
+                                             server communication
+--ws-url WS_URL                              Server URL for WebSocket mode
+--save-quality SAVE_QUALITY                  Quality of saved JPEG image, range from 0 to 100 with
+                                             100 being best
+```
+
+<!-- Auto generated end -->
+
 ### 使用命令行执行
 
 ```bash
@@ -105,7 +199,7 @@ VIN: Vietnames
 # 使用 `--translator=<翻译器名称>` 来指定翻译器
 # 使用 `--target-lang=<语言代码>` 来指定目标语言
 # 将 <图片文件路径> 替换为图片的路径
-$ python -m manga_translator --verbose --use-cuda --translator=google --target-lang=CHS --image <path_to_image_file>
+$ python -m manga_translator --verbose --use-cuda --translator=google --target-lang=CHS -i <path_to_image_file>
 # 结果会存放到 result 文件夹里
 ```
 
@@ -115,7 +209,7 @@ $ python -m manga_translator --verbose --use-cuda --translator=google --target-l
 # 其它参数如上
 # 使用 `--mode batch` 开启批量翻译模式
 # 将 <图片文件夹路径> 替换为图片文件夹的路径
-$ python -m manga_translator --verbose --mode batch --use-cuda --translator=google --target-lang=CHS --image <图片文件夹路径>
+$ python -m manga_translator --verbose --mode batch --use-cuda --translator=google --target-lang=CHS -i <图片文件夹路径>
 # 结果会存放到 `<图片文件夹路径>-translated` 文件夹里
 ```
 
@@ -182,7 +276,7 @@ POST 提交一个带图片，名字是 file 的 form 到 <http://127.0.0.1:5003/
 }
 ```
 
-将该 JSON 发送到 <http://127.0.0.1:5003/post-translation-result>，并等待返回\
+将该 JSON 发送到 <http://127.0.0.1:5003/post-manual-result>，并等待返回\
 之后就可以从得到的 `task_id` 去 result 文件夹里取结果，例如通过 Nginx 暴露 result 下的内容
 
 ## 下一步
@@ -201,11 +295,81 @@ POST 提交一个带图片，名字是 file 的 form 到 <http://127.0.0.1:5003/
 
 ## 效果图
 
-以下图片为最初版效果，并不代表目前最新版本的效果。
+以下样例可能并未经常更新，可能不能代表当前主分支版本的效果。
 
-|                                             原始图片                                              |            翻译后图片             |
-| :-----------------------------------------------------------------------------------------------: | :-------------------------------: |
-|        ![Original](demo/image/original1.jpg "https://www.pixiv.net/en/artworks/85200179")         | ![Output](demo/image/result1.png) |
-| ![Original](demo/image/original2.jpg "https://twitter.com/mmd_96yuki/status/1320122899005460481") | ![Output](demo/image/result2.png) |
-| ![Original](demo/image/original3.jpg "https://twitter.com/_taroshin_/status/1231099378779082754") | ![Output](demo/image/result3.png) |
-|           ![Original](demo/image/original4.jpg "https://amagi.fanbox.cc/posts/1904941")           | ![Output](demo/image/result4.png) |
+<table>
+  <thead>
+    <tr>
+      <th align="center" width="50%">原始图片</th>
+      <th align="center" width="50%">翻译后图片</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232265329-6a560438-e887-4f7f-b6a1-a61b8648f781.png">
+          <img alt="佐藤さんは知っていた - 猫麦" src="https://user-images.githubusercontent.com/31543482/232265329-6a560438-e887-4f7f-b6a1-a61b8648f781.png" />
+        </a>
+        <br />
+        <a href="https://twitter.com/09ra_19ra/status/1647079591109103617/photo/1">(Source @09ra_19ra)</a>
+      </td>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232265339-514c843a-0541-4a24-b3bc-1efa6915f757.png">
+          <img alt="Output" src="https://user-images.githubusercontent.com/31543482/232265339-514c843a-0541-4a24-b3bc-1efa6915f757.png" />
+        </a>
+        <br />
+        <a href="https://user-images.githubusercontent.com/31543482/232265376-01a4557d-8120-4b6b-b062-f271df177770.png">(Mask)</a>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232265479-a15c43b5-0f00-489c-9b04-5dfbcd48c432.png">
+          <img alt="Gris finds out she's of royal blood - VERTI" src="https://user-images.githubusercontent.com/31543482/232265479-a15c43b5-0f00-489c-9b04-5dfbcd48c432.png" />
+        </a>
+        <br />
+        <a href="https://twitter.com/VERTIGRIS_ART/status/1644365184142647300/photo/1">(Source @VERTIGRIS_ART)</a>
+      </td>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232265480-f8ba7a28-846f-46e7-8041-3dcb1afe3f67.png">
+          <img alt="Output" src="https://user-images.githubusercontent.com/31543482/232265480-f8ba7a28-846f-46e7-8041-3dcb1afe3f67.png" />
+        </a>
+        <br />
+        <code>--detector ctd</code>
+        <a href="https://user-images.githubusercontent.com/31543482/232265483-99ad20af-dca8-4b78-90f9-a6599eb0e70b.png">(Mask)</a>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232264684-5a7bcf8e-707b-4925-86b0-4212382f1680.png">
+          <img alt="陰キャお嬢様の新学期🏫📔🌸 (#3) - ひづき夜宵🎀💜" src="https://user-images.githubusercontent.com/31543482/232264684-5a7bcf8e-707b-4925-86b0-4212382f1680.png" />
+        </a>
+        <br />
+        <a href="https://twitter.com/hiduki_yayoi/status/1645186427712573440/photo/2">(Source @hiduki_yayoi)</a>
+      </td>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232264644-39db36c8-a8d9-4009-823d-bf85ca0609bf.png">
+          <img alt="Output" src="https://user-images.githubusercontent.com/31543482/232264644-39db36c8-a8d9-4009-823d-bf85ca0609bf.png" />
+        </a>
+        <br />
+        <code>--translator none</code>
+        <a href="https://user-images.githubusercontent.com/31543482/232264671-bc8dd9d0-8675-4c6d-8f86-0d5b7a342233.png">(Mask)</a>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232265794-5ea8a0cb-42fe-4438-80b7-3bf7eaf0ff2c.png">
+          <img alt="幼なじみの高校デビューの癖がすごい (#1) - 神吉李花☪️🐧" src="https://user-images.githubusercontent.com/31543482/232265794-5ea8a0cb-42fe-4438-80b7-3bf7eaf0ff2c.png" />
+        </a>
+        <br />
+        <a href="https://twitter.com/rikak/status/1642727617886556160/photo/1">(Source @rikak)</a>
+      </td>
+      <td align="center" width="50%">
+        <a href="https://user-images.githubusercontent.com/31543482/232265795-4bc47589-fd97-4073-8cf4-82ae216a88bc.png">
+          <img alt="Output" src="https://user-images.githubusercontent.com/31543482/232265795-4bc47589-fd97-4073-8cf4-82ae216a88bc.png" />
+        </a>
+        <br />
+        <a href="https://user-images.githubusercontent.com/31543482/232265800-6bdc7973-41fe-4d7e-a554-98ea7ca7a137.png">(Mask)</a>
+      </td>
+    </tr>
+  </tbody>
+</table>

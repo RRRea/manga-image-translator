@@ -1,5 +1,4 @@
 from typing import List
-import huggingface_hub
 import langid
 
 from .common import OfflineTranslator
@@ -61,7 +60,7 @@ class NLLBTranslator(OfflineTranslator):
         del self.model
         del self.tokenizer
 
-    async def _forward(self, from_lang: str, to_lang: str, queries: List[str]) -> List[str]:
+    async def _infer(self, from_lang: str, to_lang: str, queries: List[str]) -> List[str]:
         if from_lang == 'auto':
             detected_lang = langid.classify('\n'.join(queries))[0]
             target_lang = self._map_detected_lang_to_translator(detected_lang)
@@ -87,7 +86,7 @@ class NLLBTranslator(OfflineTranslator):
             self.logger.warn(f'NLLB Translation Failed. Could not detect language (Or language not supported for text: {query})')
             return ''
 
-        translator = pipeline('translation', 
+        translator = pipeline('translation',
             device=self.device,
             model=self.model,
             tokenizer=self.tokenizer,
@@ -106,9 +105,11 @@ class NLLBTranslator(OfflineTranslator):
         return ISO_639_1_TO_FLORES_200[lang]
 
     async def _download(self):
+        import huggingface_hub
         huggingface_hub.snapshot_download(self._TRANSLATOR_MODEL)
 
     def _check_downloaded(self) -> bool:
+        import huggingface_hub
         return huggingface_hub.try_to_load_from_cache(self._TRANSLATOR_MODEL, 'pytorch_model.bin') is not None
 
 class NLLBBigTranslator(NLLBTranslator):

@@ -28,4 +28,13 @@ websockets
 protobuf
 ctranslate2
 colorama
-pytest
+openai
+open_clip_torch
+safetensors
+pandas
+onnxruntime
+omegaconf
+python-dotenv
+nest-asyncio
+marshmallow
+git+https://github.com/lucasb-eyer/pydensecrf.git

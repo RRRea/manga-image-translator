@@ -11,6 +11,8 @@ class Formatter(logging.Formatter):
             self._style._fmt = f'{colorama.Fore.RED}%(levelname)s:{colorama.Fore.RESET} [%(name)s] %(message)s'
         elif record.levelno >= logging.WARN:
             self._style._fmt = f'{colorama.Fore.YELLOW}%(levelname)s:{colorama.Fore.RESET} [%(name)s] %(message)s'
+        elif record.levelno == logging.DEBUG:
+            self._style._fmt = '[%(name)s] %(message)s'
         else:
             self._style._fmt = '[%(name)s] %(message)s'
         return super().formatMessage(record)
@@ -24,12 +26,13 @@ class Filter(logging.Filter):
         record.name = replace_prefix(record.name, ROOT_TAG + '.', '')
         return super().filter(record)
 
-logging.basicConfig(level=logging.INFO)
 root = logging.getLogger(ROOT_TAG)
 
-for h in logging.root.handlers:
-    h.setFormatter(Formatter())
-    h.addFilter(Filter())
+def init_logging():
+    logging.basicConfig(level=logging.INFO)
+    for h in logging.root.handlers:
+        h.setFormatter(Formatter())
+        h.addFilter(Filter())
 
 def set_log_level(level):
     root.setLevel(level)
@@ -42,7 +45,7 @@ file_handlers = {}
 def add_file_logger(path: str):
     if path in file_handlers:
         return
-    file_handlers[path] = logging.FileHandler(path)
+    file_handlers[path] = logging.FileHandler(path, encoding='utf8')
     logging.root.addHandler(file_handlers[path])
 
 def remove_file_logger(path: str):

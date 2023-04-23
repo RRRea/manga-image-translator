@@ -4,6 +4,7 @@ from typing import List
 import re
 
 from .common import OfflineTranslator
+from ..utils import chunks
 
 class JparacrawlTranslator(OfflineTranslator):
     _LANGUAGE_CODE_MAP = {
@@ -83,7 +84,7 @@ class JparacrawlTranslator(OfflineTranslator):
         del self.model
         del self.sentence_piece_processors
 
-    async def forward(self, from_lang: str, to_lang: str, queries: List[str]) -> List[str]:
+    async def infer(self, from_lang: str, to_lang: str, queries: List[str]) -> List[str]:
         if from_lang == 'auto':
             if to_lang == 'en':
                 from_lang = 'ja'
@@ -92,20 +93,20 @@ class JparacrawlTranslator(OfflineTranslator):
         if self.is_loaded() and to_lang != self.load_params['to_lang']:
             await self.reload(self.load_params['device'], from_lang, to_lang)
 
-        return await super().forward(from_lang, to_lang, queries)
+        return await super().infer(from_lang, to_lang, queries)
 
-    async def _forward(self, from_lang: str, to_lang: str, queries: List[str]) -> List[str]:
+    async def _infer(self, from_lang: str, to_lang: str, queries: List[str]) -> List[str]:
         queries_tokenized = self.tokenize(queries, from_lang)
         translated_tokenized = self.model.translate_batch(
             source=queries_tokenized,
             beam_size=5,
             num_hypotheses=1,
             return_alternatives=False,
-            disable_unk=False,
-            replace_unknowns=False,
+            disable_unk=True,
+            replace_unknowns=True,
             repetition_penalty=3,
         )
-        translated = self.detokenize(list(map(lambda t: t[0]["tokens"], translated_tokenized)), to_lang)
+        translated = self.detokenize(list(map(lambda t: t[0]['tokens'], translated_tokenized)), to_lang)
         return translated
 
     def tokenize(self, queries, lang):
@@ -175,15 +176,14 @@ class SugoiTranslator(JparacrawlBigTranslator):
             self.query_split_sizes = []
             for q in queries:
                 # Split sentences into their own queries to prevent abbreviations
-                q = q.replace('.', '@')
-                sentences = list(filter(lambda x: x, re.sub(r'。+', r'。', q).split('。')))
-                if len(sentences) < 3:
-                    # Would reduce quality due to decreased context information?
-                    sentences = [q]
-                else:
-                    sentences = [s + '。' for s in sentences]
-                self.query_split_sizes.append(len(sentences))
-                new_queries.extend(sentences)
+                sentences = re.split(r'(\w[.‥…!?。・]+)', q)
+                chunk_queries = []
+                # Two sentences per query
+                for chunk in chunks(sentences, 4):
+                    s = ''.join(chunk)
+                    chunk_queries.append(re.sub(r'[.。]', '@', s))
+                self.query_split_sizes.append(len(chunk_queries))
+                new_queries.extend(chunk_queries)
             queries = new_queries
         return super().tokenize(queries, lang)
 
@@ -194,12 +194,11 @@ class SugoiTranslator(JparacrawlBigTranslator):
         if lang == 'en-sugoi':
             new_translations = []
             i = 0
+            # Put the split queries back together
             for query_count in self.query_split_sizes:
-                sentences = ''
-                for sentence in translations[i:i+query_count]:
-                    sentences += sentence + ('. ' if not sentence.endswith('.') else ' ')
-                sentences = sentences.replace('@', '.').replace('▁', ' ').replace('<unk>', '')
+                sentences = ' '.join(translations[i:i+query_count])
                 i += query_count
+                sentences = sentences.replace('@', '.').replace('▁', ' ').replace('<unk>', '')
                 new_translations.append(sentences)
             translations = new_translations
         return translations

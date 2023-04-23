@@ -1,11 +1,19 @@
-import asyncio
 import os
+import asyncio
 import logging
 from argparse import Namespace
 
-from .manga_translator import MangaTranslator, MangaTranslatorWeb, MangaTranslatorWS, set_main_logger
+from .manga_translator import (
+    MangaTranslator,
+    MangaTranslatorAPI,
+    MangaTranslatorWeb,
+    MangaTranslatorWS,
+    set_main_logger,
+)
 from .args import parser
-from .utils import BASE_PATH, get_logger, set_log_level
+from .utils import BASE_PATH, init_logging, get_logger, set_log_level
+
+# TODO: Dynamic imports to reduce ram usage in web(-server) mode. Will require dealing with args.py imports.
 
 async def dispatch(args: Namespace):
     args_dict = vars(args)
@@ -24,10 +32,16 @@ async def dispatch(args: Namespace):
         translator = MangaTranslator(args_dict)
         await translator.translate_path(args.input, dest, args_dict)
 
-    elif args.mode in ('web', 'web2'):
+    elif args.mode == 'api':
+        translator = MangaTranslatorAPI(args_dict)
+        await translator.listen(args_dict)
+
+    elif args.mode == 'web':
+        from .server.web_main import dispatch
+        await dispatch(args.host, args.port, translation_params=args_dict)
+
+    elif args.mode == 'web_client':
         translator = MangaTranslatorWeb(args_dict)
-        if args.mode == 'web':
-            translator.instantiate_webserver()
         await translator.listen(args_dict)
 
     elif args.mode == 'ws':
@@ -36,18 +50,21 @@ async def dispatch(args: Namespace):
 
 if __name__ == '__main__':
     args = None
+    init_logging()
     try:
         args = parser.parse_args()
         set_log_level(level=logging.DEBUG if args.verbose else logging.INFO)
         logger = get_logger(args.mode)
         set_main_logger(logger)
-        logger.debug(args)
+        if args.mode != 'web':
+            logger.debug(args)
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(dispatch(args))
     except KeyboardInterrupt:
-        print()
+        if not args or args.mode != 'web':
+            print()
     except Exception as e:
         logger.error(f'{e.__class__.__name__}: {e}',
                      exc_info=e if args and args.verbose else None)
